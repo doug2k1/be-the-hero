@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const connection = require("../database/connection");
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 module.exports = {
   async list(req, res) {
