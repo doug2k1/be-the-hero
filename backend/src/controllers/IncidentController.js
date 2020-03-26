@@ -1,33 +1,50 @@
 const crypto = require("crypto");
 const connection = require("../database/connection");
 
-const PAGE_SIZE = 6;
+const WEB_PAGE_SIZE = 6;
+const MOB_PAGE_SIZE = 10;
 
 module.exports = {
   async list(req, res) {
     const ngoId = req.headers.authorization;
-
-    // FIXME: refactor into middleware
-    if (!ngoId) {
-      res.status(403).send();
-    }
-
     const { page = 1 } = req.query;
+    let count = 0;
+    let incidents = [];
 
-    const [count] = await connection("incidents").count();
-    const incidents = await connection("incidents")
-      .where("ngoId", ngoId)
-      .join("ngos", "ngos.id", "=", "incidents.ngoId")
-      .limit(PAGE_SIZE)
-      .offset((page - 1) * PAGE_SIZE)
-      .select([
-        "incidents.*",
-        "ngos.name",
-        "ngos.email",
-        "ngos.whatsapp",
-        "ngos.city",
-        "ngos.state"
-      ]);
+    if (ngoId) {
+      [count] = await connection("incidents")
+        .where("ngoId", ngoId)
+        .count();
+
+      incidents = await connection("incidents")
+        .where("ngoId", ngoId)
+        .join("ngos", "ngos.id", "=", "incidents.ngoId")
+        .limit(WEB_PAGE_SIZE)
+        .offset((page - 1) * WEB_PAGE_SIZE)
+        .select([
+          "incidents.*",
+          "ngos.name",
+          "ngos.email",
+          "ngos.whatsapp",
+          "ngos.city",
+          "ngos.state"
+        ]);
+    } else {
+      [count] = await connection("incidents").count();
+
+      incidents = await connection("incidents")
+        .join("ngos", "ngos.id", "=", "incidents.ngoId")
+        .limit(MOB_PAGE_SIZE)
+        .offset((page - 1) * MOB_PAGE_SIZE)
+        .select([
+          "incidents.*",
+          "ngos.name",
+          "ngos.email",
+          "ngos.whatsapp",
+          "ngos.city",
+          "ngos.state"
+        ]);
+    }
 
     res.header("X-Total-Count", count["count(*)"]);
 
